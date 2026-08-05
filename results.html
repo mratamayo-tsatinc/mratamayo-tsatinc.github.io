@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Exercise Results</title>
+<link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&family=Roboto+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --primary: #6200ee;
+    --text-main: #1a1a1a;
+    --text-secondary: #666666;
+    --border-color: #e0e0e0;
+    --surface: #ffffff;
+    --bg: #f5f7fa;
+  }
+  body {
+    margin: 0;
+    font-family: 'Roboto', sans-serif;
+    background: var(--bg);
+    color: var(--text-main);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    padding: 1.5rem;
+    box-sizing: border-box;
+  }
+  .result-card {
+    background: var(--surface);
+    border-radius: 16px;
+    padding: 2rem;
+    max-width: 420px;
+    width: 100%;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+  }
+  .result-card h1 {
+    margin: 0 0 1.5rem 0;
+    color: var(--primary);
+    font-size: 1.4rem;
+  }
+  .result-row {
+    display: flex;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 0.75rem 0;
+    border-bottom: 1px solid var(--border-color);
+  }
+  .result-row:last-child { border-bottom: none; }
+  .result-label {
+    color: var(--text-secondary);
+    font-weight: 600;
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    flex-shrink: 0;
+  }
+  .result-value {
+    font-family: 'Roboto Mono', monospace;
+    font-weight: 500;
+    text-align: right;
+    word-break: break-word;
+    overflow-wrap: anywhere;
+  }
+  .result-value.score {
+    color: var(--primary);
+    font-weight: 700;
+    font-size: 1.1rem;
+  }
+</style>
+</head>
+<body>
+  <div class="result-card">
+    <h1>Exercise Results</h1>
+    <div class="result-row"><span class="result-label">URL</span><span class="result-value" id="resUrl"></span></div>
+    <div class="result-row"><span class="result-label">Email</span><span class="result-value" id="resEmail"></span></div>
+    <div class="result-row"><span class="result-label">Timestamp</span><span class="result-value" id="resTimestamp"></span></div>
+    <div class="result-row"><span class="result-label">Raw Score</span><span class="result-value score" id="resScore"></span></div>
+    <div class="result-row"><span class="result-label">Max Score</span><span class="result-value score" id="resMax"></span></div>
+  </div>
+  <script>
+    const params = new URLSearchParams(window.location.search);
+    document.getElementById('resUrl').textContent = window.location.href;
+    document.getElementById('resEmail').textContent = params.get('email') || '—';
+    const ts = params.get('timestamp');
+    document.getElementById('resTimestamp').textContent = ts ? new Date(ts).toLocaleString() : '—';
+    document.getElementById('resScore').textContent = params.get('score') ?? '—';
+    document.getElementById('resMax').textContent = params.get('max') ?? '—';
+  </script>
+</body>
+</html>
