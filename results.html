@@ -80,7 +80,7 @@
   </div>
   <script>
     const params = new URLSearchParams(window.location.search);
-    document.getElementById('resUrl').textContent = window.location.href;
+    document.getElementById('resUrl').textContent = params.get('appUrl') || '—';
     document.getElementById('resEmail').textContent = params.get('email') || '—';
     const ts = params.get('timestamp');
     document.getElementById('resTimestamp').textContent = ts ? new Date(ts).toLocaleString() : '—';
