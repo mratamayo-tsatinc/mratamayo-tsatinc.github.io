@@ -37,7 +37,6 @@
   /* --- Card, adapted from .score-summary-modal --- */
   .score-summary-modal {
     width: 100%;
-    max-width: 460px;
     background: var(--surface);
     border-radius: 16px;
     box-shadow: var(--shadow-lg);
@@ -56,16 +55,26 @@
     text-align: center;
   }
 
+  .result-page-wrap {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 100%;
+    max-width: 460px;
+  }
+
   .school-logo {
     display: block;
-    width: 64px;
-    height: 64px;
-    margin: 0 auto 0.9rem auto;
+    width: 84px;
+    height: 84px;
+    margin: 0 0 1.25rem 0;
     border-radius: 50%;
     background: #ffffff;
-    padding: 6px;
+    padding: 8px;
     object-fit: contain;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.18);
+    position: relative;
+    z-index: 1;
   }
 
   .score-summary-header h1 {
