@@ -348,7 +348,7 @@
         }
 
         if (data) {
-            document.getElementById('resUrl').textContent = window.location.hostname;
+            document.getElementById('resUrl').textContent = params.get('a') || '—';
             document.getElementById('resEmail').textContent = data.e || '—';
             document.getElementById('resScore').textContent = data.s ?? '0';
             document.getElementById('resMax').textContent = data.m ?? '0';
