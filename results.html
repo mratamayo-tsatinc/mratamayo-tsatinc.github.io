@@ -255,18 +255,54 @@
 
   <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
   <script>
-    const params = new URLSearchParams(window.location.search);
+    // These MUST exactly match the values in script.js, or decryption fails.
+    const QR_SHARED_PASSPHRASE = 'AA-9002341ds2sd14-dsfs12sd-54231hg';
+    const QR_SALT_STRING = 'java-activity-qr-salt-v1';
 
-    document.getElementById('resUrl').textContent = params.get('appUrl') || '—';
-    document.getElementById('resEmail').textContent = params.get('email') || '—';
-    document.getElementById('resScore').textContent = params.get('score') ?? '0';
-    document.getElementById('resMax').textContent = params.get('max') ?? '0';
+    async function deriveQrKey() {
+        const enc = new TextEncoder();
+        const keyMaterial = await crypto.subtle.importKey(
+            'raw',
+            enc.encode(QR_SHARED_PASSPHRASE),
+            { name: 'PBKDF2' },
+            false,
+            ['deriveKey']
+        );
+        return crypto.subtle.deriveKey(
+            {
+                name: 'PBKDF2',
+                salt: enc.encode(QR_SALT_STRING),
+                iterations: 100000,
+                hash: 'SHA-256'
+            },
+            keyMaterial,
+            { name: 'AES-GCM', length: 256 },
+            false,
+            ['encrypt', 'decrypt']
+        );
+    }
 
-    // Render the timestamp using the same day/date/time layout as the
-    // main app's sidebar clock.
-    const ts = params.get('timestamp');
-    const timestampWrap = document.getElementById('resTimestampWrap');
-    if (ts) {
+    function base64UrlToBytes(base64url) {
+        const base64 = base64url.replace(/-/g, '+').replace(/_/g, '/');
+        const padded = base64 + '='.repeat((4 - base64.length % 4) % 4);
+        const binary = atob(padded);
+        const bytes = new Uint8Array(binary.length);
+        for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+        return bytes;
+    }
+
+    async function decryptQrPayload(token) {
+        const combined = base64UrlToBytes(token);
+        const iv = combined.slice(0, 12);
+        const ciphertext = combined.slice(12);
+        const key = await deriveQrKey();
+        const plaintextBuffer = await crypto.subtle.decrypt({ name: 'AES-GCM', iv }, key, ciphertext);
+        return JSON.parse(new TextDecoder().decode(plaintextBuffer));
+    }
+
+    function renderTimestamp(ts) {
+        const timestampWrap = document.getElementById('resTimestampWrap');
+        if (!ts) return;
         const d = new Date(ts);
         const dayName = d.toLocaleDateString(undefined, { weekday: 'long' });
         const dateStr = d.toLocaleDateString(undefined, { month: 'long', day: 'numeric', year: 'numeric' });
@@ -280,15 +316,46 @@
             `<div class="timestamp-time">${hours}:${minutes}<span class="timestamp-seconds">:${seconds}</span> ${period}</div>`;
     }
 
-    // Celebrate once the page has fully loaded.
-    window.addEventListener('load', () => {
+    function fireConfetti() {
         confetti({
             particleCount: 140,
             spread: 90,
             origin: { y: 0.5 },
             colors: ['#6200ee', '#03dac6', '#ffca28']
         });
-    });
+    }
+
+    async function init() {
+        const params = new URLSearchParams(window.location.search);
+        const token = params.get('d');
+
+        let data = null;
+        try {
+            if (token) data = await decryptQrPayload(token);
+        } catch (err) {
+            console.error('Failed to decrypt results payload:', err);
+        }
+
+        if (data) {
+            document.getElementById('resUrl').textContent = data.appUrl || '—';
+            document.getElementById('resEmail').textContent = data.email || '—';
+            document.getElementById('resScore').textContent = data.score ?? '0';
+            document.getElementById('resMax').textContent = data.max ?? '0';
+            renderTimestamp(data.timestamp);
+        } else {
+            document.getElementById('resUrl').textContent = 'Unable to decode results';
+        }
+
+        // Celebrate once decryption/render is done AND the page has
+        // fully loaded (fonts, icons, confetti script included).
+        fireConfetti();
+    }
+
+    if (document.readyState === 'complete') {
+        init();
+    } else {
+        window.addEventListener('load', init);
+    }
   </script>
 </body>
 </html>
