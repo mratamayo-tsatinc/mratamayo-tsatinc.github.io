@@ -348,11 +348,12 @@
         }
 
         if (data) {
-            document.getElementById('resUrl').textContent = data.appUrl || '—';
-            document.getElementById('resEmail').textContent = data.email || '—';
-            document.getElementById('resScore').textContent = data.score ?? '0';
-            document.getElementById('resMax').textContent = data.max ?? '0';
-            renderTimestamp(data.timestamp);
+            document.getElementById('resUrl').textContent = window.location.hostname;
+            document.getElementById('resEmail').textContent = data.e || '—';
+            document.getElementById('resScore').textContent = data.s ?? '0';
+            document.getElementById('resMax').textContent = data.m ?? '0';
+            // t is unix seconds now, not an ISO string
+            renderTimestamp(data.t ? data.t * 1000 : null);
         } else {
             document.getElementById('resUrl').textContent = 'Unable to decode results';
         }
