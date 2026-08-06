@@ -1,0 +1,471 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Exercise Results</title>
+<link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700;800&family=Roboto+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+<style>
+  :root {
+    --primary: #6200ee;
+    --primary-dark: #3700b3;
+    --secondary: #03dac6;
+    --bg: #f5f7fa;
+    --surface: #ffffff;
+    --text-main: #1a1a1a;
+    --text-secondary: #666666;
+    --text-tertiary: #999999;
+    --border-color: #e0e0e0;
+    --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.15);
+  }
+
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0;
+    padding: 0;
+    min-height: 100%;
+    font-family: 'Roboto', sans-serif;
+    background: var(--bg);
+    color: var(--text-main);
+    -webkit-font-smoothing: antialiased;
+    /* The page now scrolls normally — parallax comes from the logo
+       moving at a different rate than the page's own scroll, not from
+       locking the page and scrolling a box internally. */
+  }
+
+  /* --- Page wrap: normal vertical flow, logo above the modal card --- */
+  .result-page-wrap {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 100%;
+    max-width: 460px;
+    margin: 0 auto;
+    padding: 3rem 1.5rem 4rem 1.5rem;
+  }
+
+  /* Parallax layer: this element's transform is updated on scroll (see
+     script below) so it drifts upward slower than the page scrolls,
+     giving it a sense of depth relative to the modal card beneath it. */
+  .parallax-logo-layer {
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    margin-bottom: 1.25rem;
+    will-change: transform;
+  }
+
+  .school-logo {
+    display: block;
+    width: 150px;
+    height: 150px;
+    margin: 0;
+    padding: 0;
+    border-radius: 50%;
+    background: #ffffff;
+    object-fit: contain;
+    box-shadow: none;
+  }
+
+  /* --- Card, adapted from .score-summary-modal — scrolls with the page now --- */
+  .score-summary-modal {
+    width: 100%;
+    background: var(--surface);
+    border-radius: 16px;
+    box-shadow: var(--shadow-lg);
+    animation: scaleIn 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    z-index: 1; /* sits above the logo layer as it drifts behind/past it */
+  }
+  
+  @keyframes scaleIn {
+    from { opacity: 0; transform: scale(0.9); }
+    to { opacity: 1; transform: scale(1); }
+  }
+
+  .score-summary-header {
+    padding: 1.75rem 2rem;
+    background: linear-gradient(135deg, var(--primary), #7c3aed);
+    text-align: center;
+  }
+
+  .score-summary-header h1 {
+    margin: 0;
+    color: #ffffff;
+    font-size: 1.4rem;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.6rem;
+  }
+
+  .score-summary-body {
+    padding: 2.5rem;
+    text-align: center;
+  }
+
+  /* --- Score circle: #1 and #2 in importance (raw / max score) --- */
+  .score-circle {
+    width: 180px;
+    height: 180px;
+    margin: 0 auto 2rem auto;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--primary), var(--secondary));
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    color: #ffffff;
+    box-shadow: 0 12px 40px rgba(98, 0, 238, 0.35);
+    position: relative;
+  }
+
+  .score-circle::before {
+    content: '';
+    position: absolute;
+    inset: -8px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--primary), var(--secondary));
+    opacity: 0.2;
+    animation: pulse2 2s ease-in-out infinite;
+  }
+
+  @keyframes pulse2 {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.1); }
+  }
+
+  .score-circle > * {
+    position: relative;
+    z-index: 1;
+  }
+
+  .score-number {
+    display: flex;
+    align-items: baseline;
+    justify-content: center;
+    gap: 0.1rem;
+    font-family: 'Roboto Mono', monospace;
+    line-height: 1;
+    margin-bottom: 0.2rem;
+  }
+
+  /* Raw score: the dominant figure — largest, boldest, full-opacity white */
+  .score-raw {
+    font-size: 3.1rem;
+    font-weight: 800;
+    color: #ffffff;
+  }
+
+  .score-divider {
+    font-size: 1.3rem;
+    font-weight: 400;
+    color: #ffffff;
+    opacity: 0.5;
+    margin: 0 0.1rem;
+  }
+
+  /* Max score: deliberately smaller, lighter weight, and faded relative
+     to the raw score — same circle, clearly secondary figure */
+  .score-max {
+    font-size: 1.4rem;
+    font-weight: 500;
+    color: #ffffff;
+    opacity: 0.6;
+  }
+
+  .score-label {
+    font-size: 0.85rem;
+    font-weight: 700;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    opacity: 0.95;
+  }
+
+  /* --- Remaining fields, no labels — icon + value, weight decreasing
+     down the list to communicate hierarchy via size/weight/color --- */
+  .result-info-section {
+    text-align: left;
+  }
+
+  .result-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.9rem;
+    padding: 0.9rem 0;
+    border-bottom: 1px solid var(--border-color);
+  }
+
+  .result-row:last-child {
+    border-bottom: none;
+  }
+
+  .result-icon {
+    width: 36px;
+    height: 36px;
+    flex-shrink: 0;
+    border-radius: 8px;
+    background: rgba(98, 0, 238, 0.08);
+    color: var(--primary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1rem;
+  }
+
+  /* --- Group 1 (highest of the remaining fields): activity title, with
+     its URL folded in underneath as a clearly secondary, pill-wrapped
+     line — same group, two tiers of emphasis --- */
+  .result-text-group {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+  }
+
+  .result-value--activity {
+    font-family: 'Roboto', sans-serif;
+    font-weight: 700;
+    font-size: 1.05rem;
+    color: var(--text-main);
+    word-break: break-word;
+  }
+
+  .result-url-pill {
+    display: inline-flex;
+    align-self: flex-start;
+    max-width: 100%;
+    padding: 3px 11px;
+    border-radius: 999px;
+    background: rgba(98, 0, 238, 0.08);
+    color: var(--primary);
+    font-family: 'Roboto Mono', monospace;
+    font-size: 0.7rem;
+    font-weight: 600;
+    letter-spacing: 0.2px;
+    word-break: break-word;
+    overflow-wrap: anywhere;
+  }
+
+  /* --- Group 2: student email — mid-weight, plain text, no pill --- */
+  .result-value--email {
+    flex: 1;
+    min-width: 0;
+    padding-top: 0.15rem;
+    font-family: 'Roboto Mono', monospace;
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--text-main);
+    word-break: break-word;
+  }
+
+  /* --- Group 3 (lowest emphasis on the page): timestamp — smallest,
+     lightest weight, most muted color --- */
+  .result-value--timestamp {
+    flex: 1;
+    min-width: 0;
+    padding-top: 0.15rem;
+  }
+
+  .timestamp-date {
+    font-family: 'Roboto Mono', monospace;
+    font-size: 0.68rem;
+    font-weight: 400;
+    color: var(--text-tertiary);
+    letter-spacing: 0.2px;
+  }
+
+  .timestamp-time {
+    display: flex;
+    align-items: baseline;
+    gap: 0.3rem;
+    font-family: 'Roboto Mono', monospace;
+    font-size: 0.8rem;
+    font-weight: 500;
+    color: var(--text-secondary);
+    letter-spacing: 0.2px;
+    margin-top: 0.1rem;
+  }
+
+  .timestamp-seconds {
+    color: var(--text-tertiary);
+    font-weight: 600;
+  }
+</style>
+</head>
+<body>
+  <div class="result-page-wrap">
+    <div class="parallax-logo-layer" id="parallaxLogoLayer">
+      <img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRvc9o3Q_YlbNhYjvTouDZAAy0TzLAHHYabzuq6VtXNf7VXiUHYUEFkemOj&s=10" alt="School logo" class="school-logo">
+    </div>
+
+    <div class="score-summary-modal">
+      <div class="score-summary-header">
+        <h1><i class="fa-solid fa-trophy" aria-hidden="true"></i> Session Results</h1>
+      </div>
+      <div class="score-summary-body">
+        <!-- Raw score dominant, max score deliberately secondary -->
+        <div class="score-circle" role="status" aria-live="polite">
+          <div class="score-number">
+            <span class="score-raw" id="resScore">0</span><span class="score-divider">/</span><span class="score-max" id="resMax">0</span>
+          </div>
+          <div class="score-label">Score</div>
+        </div>
+
+        <!-- Activity + URL grouped as one hierarchy tier, then email,
+             then timestamp — weight decreases top to bottom -->
+        <div class="result-info-section">
+          <div class="result-row">
+            <span class="result-icon"><i class="fa-solid fa-diagram-project" aria-hidden="true"></i></span>
+            <div class="result-text-group">
+              <div class="result-value--activity" id="resActivity">—</div>
+              <span class="result-url-pill" id="resUrl">—</span>
+            </div>
+          </div>
+          <div class="result-row">
+            <span class="result-icon"><i class="fa-solid fa-envelope" aria-hidden="true"></i></span>
+            <div class="result-value--email" id="resEmail">—</div>
+          </div>
+          <div class="result-row">
+            <span class="result-icon"><i class="fa-solid fa-clock" aria-hidden="true"></i></span>
+            <div class="result-value--timestamp" id="resTimestampWrap">—</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+  <script>
+    // These MUST exactly match the values in script.js, or decryption fails.
+    const QR_SHARED_PASSPHRASE = 'AA-9002341ds2sd14-dsfs12sd-54231hg';
+    const QR_SALT_STRING = 'java-activity-qr-salt-v1';
+
+    async function deriveQrKey() {
+        const enc = new TextEncoder();
+        const keyMaterial = await crypto.subtle.importKey(
+            'raw',
+            enc.encode(QR_SHARED_PASSPHRASE),
+            { name: 'PBKDF2' },
+            false,
+            ['deriveKey']
+        );
+        return crypto.subtle.deriveKey(
+            {
+                name: 'PBKDF2',
+                salt: enc.encode(QR_SALT_STRING),
+                iterations: 100000,
+                hash: 'SHA-256'
+            },
+            keyMaterial,
+            { name: 'AES-GCM', length: 256 },
+            false,
+            ['encrypt', 'decrypt']
+        );
+    }
+
+    function base64UrlToBytes(base64url) {
+        const base64 = base64url.replace(/-/g, '+').replace(/_/g, '/');
+        const padded = base64 + '='.repeat((4 - base64.length % 4) % 4);
+        const binary = atob(padded);
+        const bytes = new Uint8Array(binary.length);
+        for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+        return bytes;
+    }
+
+    async function decryptQrPayload(token) {
+        const combined = base64UrlToBytes(token);
+        const iv = combined.slice(0, 12);
+        const ciphertext = combined.slice(12);
+        const key = await deriveQrKey();
+        const plaintextBuffer = await crypto.subtle.decrypt({ name: 'AES-GCM', iv }, key, ciphertext);
+        return JSON.parse(new TextDecoder().decode(plaintextBuffer));
+    }
+
+    function renderTimestamp(msSinceEpoch) {
+        const wrap = document.getElementById('resTimestampWrap');
+        if (!msSinceEpoch) return;
+        const d = new Date(msSinceEpoch);
+        const dayName = d.toLocaleDateString(undefined, { weekday: 'long' });
+        const dateStr = d.toLocaleDateString(undefined, { month: 'long', day: 'numeric', year: 'numeric' });
+        let hours = d.getHours();
+        const period = hours >= 12 ? 'PM' : 'AM';
+        hours = hours % 12 || 12;
+        const minutes = d.getMinutes().toString().padStart(2, '0');
+        const seconds = d.getSeconds().toString().padStart(2, '0');
+        wrap.innerHTML =
+            `<div class="timestamp-date">${dayName}, ${dateStr}</div>` +
+            `<div class="timestamp-time">${hours}:${minutes}<span class="timestamp-seconds">:${seconds}</span> ${period}</div>`;
+    }
+
+    function fireConfetti() {
+        confetti({
+            particleCount: 140,
+            spread: 90,
+            origin: { y: 0.5 },
+            colors: ['#6200ee', '#03dac6', '#ffca28']
+        });
+    }
+
+    async function init() {
+        const params = new URLSearchParams(window.location.search);
+        const token = params.get('d');
+
+        let data = null;
+        try {
+            if (token) data = await decryptQrPayload(token);
+        } catch (err) {
+            console.error('Failed to decrypt results payload:', err);
+        }
+
+        if (data) {
+            document.getElementById('resScore').textContent = data.s ?? '0';
+            document.getElementById('resMax').textContent = data.m ?? '0';
+            document.getElementById('resActivity').textContent = params.get('n') || '—';
+            const rawUrl = params.get('a') || '';
+            document.getElementById('resUrl').textContent = rawUrl.replace(/^https?:\/\//i, '') || '—';
+            document.getElementById('resEmail').textContent = data.e || '—';
+            renderTimestamp(data.t ? data.t * 1000 : null); // t is unix seconds
+        } else {
+            document.getElementById('resActivity').textContent = 'Unable to decode results';
+        }
+
+        fireConfetti();
+    }
+
+    if (document.readyState === 'complete') {
+        init();
+    } else {
+        window.addEventListener('load', init);
+    }
+
+    // --- PARALLAX LOGO SCROLL EFFECT ---
+    // The logo drifts at a fraction of the page's scroll speed (0.4x),
+    // so as the modal card scrolls up past it, the logo lags behind —
+    // the classic parallax "layers moving at different depths" look.
+    // rAF-throttled so it doesn't run more than once per paint.
+    (function setupParallax() {
+        const layer = document.getElementById('parallaxLogoLayer');
+        if (!layer) return;
+
+        let ticking = false;
+
+        function updateParallax() {
+            const offset = window.scrollY * 0.4;
+            layer.style.transform = `translateY(${offset}px)`;
+            ticking = false;
+        }
+
+        window.addEventListener('scroll', () => {
+            if (!ticking) {
+                requestAnimationFrame(updateParallax);
+                ticking = true;
+            }
+        }, { passive: true });
+    })();
+  </script>
+</body>
+</html>
