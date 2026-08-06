@@ -425,8 +425,7 @@
             document.getElementById('resScore').textContent = data.s ?? '0';
             document.getElementById('resMax').textContent = data.m ?? '0';
             document.getElementById('resActivity').textContent = params.get('n') || '—';
-            const rawUrl = params.get('a') || '';
-            document.getElementById('resUrl').textContent = rawUrl.replace(/^https?:\/\//i, '') || '—';
+            document.getElementById('resUrl').textContent = params.get('a') || '—';
             document.getElementById('resEmail').textContent = data.e || '—';
             renderTimestamp(data.t ? data.t * 1000 : null); // t is unix seconds
         } else {
