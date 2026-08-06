@@ -20,27 +20,51 @@
     --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.15);
   }
   * { box-sizing: border-box; }
-  body, html {
+  html, body {
     margin: 0;
     padding: 0;
-    min-height: 100%;
+    height: 100%;
     font-family: 'Roboto', sans-serif;
     background: var(--bg);
     color: var(--text-main);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 1.5rem;
     -webkit-font-smoothing: antialiased;
+    overflow: hidden; /* page itself never scrolls — only the modal box does */
   }
 
-  /* --- Card, adapted from .score-summary-modal --- */
+  /* --- Page wrap: logo stays fixed in place, modal below it scrolls --- */
+  .result-page-wrap {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    height: 100%;
+    width: 100%;
+    max-width: 460px;
+    margin: 0 auto;
+    padding: 1.5rem;
+  }
+
+  .school-logo {
+    display: block;
+    flex-shrink: 0; /* never shrinks or scrolls away */
+    width: 150px;
+    height: 150px;
+    margin: 0 0 1.25rem 0;
+    padding: 0;
+    border-radius: 50%;
+    background: #ffffff;
+    object-fit: contain;
+    box-shadow: none;
+  }
+
+  /* --- Card, adapted from .score-summary-modal — this is the part that scrolls --- */
   .score-summary-modal {
     width: 100%;
+    min-height: 0;
+    flex: 1;
+    overflow-y: auto;
     background: var(--surface);
     border-radius: 16px;
     box-shadow: var(--shadow-lg);
-    overflow: hidden;
     animation: scaleIn 0.5s cubic-bezier(0.4, 0, 0.2, 1);
   }
 
@@ -50,31 +74,9 @@
   }
 
   .score-summary-header {
-    padding: 2rem;
+    padding: 1.75rem 2rem;
     background: linear-gradient(135deg, var(--primary), #7c3aed);
     text-align: center;
-  }
-
-  .result-page-wrap {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    width: 100%;
-    max-width: 500px;
-  }
-
-  .school-logo {
-    display: block;
-    width: 102px;
-    height: 102px;
-    margin: 0 0 1.25rem 0;
-    border-radius: 50%;
-    background: #ffffff;
-    padding: 0px;
-    object-fit: contain;
-    /*box-shadow: 0 6px 16px rgba(0, 0, 0, 0.18);*/
-    position: relative;
-    z-index: 1;
   }
 
   .score-summary-header h1 {
@@ -93,7 +95,7 @@
     text-align: center;
   }
 
-  /* --- Score circle, adapted from .score-circle --- */
+  /* --- Score circle: #1 and #2 in importance (raw / max score) --- */
   .score-circle {
     width: 180px;
     height: 180px;
@@ -145,7 +147,7 @@
     opacity: 0.95;
   }
 
-  /* --- Info rows (URL / Email / Timestamp) --- */
+  /* --- Remaining fields, #3–#6, no labels — icon + value only --- */
   .result-info-section {
     text-align: left;
   }
@@ -175,21 +177,9 @@
     font-size: 1rem;
   }
 
-  .result-text {
+  .result-value {
     flex: 1;
     min-width: 0;
-  }
-
-  .result-label {
-    font-size: 0.72rem;
-    color: var(--text-tertiary);
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    font-weight: 700;
-    margin-bottom: 0.15rem;
-  }
-
-  .result-value {
     font-family: 'Roboto Mono', monospace;
     font-size: 0.95rem;
     font-weight: 600;
@@ -197,7 +187,14 @@
     word-break: break-word;
   }
 
-  /* --- Timestamp, adapted from .timestamp-date / .timestamp-time --- */
+  /* Activity name reads better in the regular typeface, not monospace */
+  .result-value--activity {
+    font-family: 'Roboto', sans-serif;
+    font-weight: 700;
+    font-size: 1rem;
+  }
+
+  /* --- Timestamp, adapted from the sidebar clock's own styling --- */
   .timestamp-date {
     font-family: 'Roboto Mono', monospace;
     font-size: 0.75rem;
@@ -227,47 +224,45 @@
 <body>
   <div class="result-page-wrap">
     <img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRvc9o3Q_YlbNhYjvTouDZAAy0TzLAHHYabzuq6VtXNf7VXiUHYUEFkemOj&s=10" alt="School logo" class="school-logo">
-  <div class="score-summary-modal">
-    <div class="score-summary-header">
-      <h1><i class="fa-solid fa-trophy" aria-hidden="true"></i> Session Results</h1>
-    </div>
-    <div class="score-summary-body">
-      <div class="score-circle" role="status" aria-live="polite">
-        <div class="score-number"><span id="resScore">0</span>/<span id="resMax">0</span></div>
-        <div class="score-label">Score</div>
-      </div>
 
-      <div class="result-info-section">
-        <div class="result-row">
-          <span class="result-icon"><i class="fa-solid fa-globe" aria-hidden="true"></i></span>
-          <div class="result-text">
-            <div class="result-label">URL</div>
+    <div class="score-summary-modal">
+      <div class="score-summary-header">
+        <h1><i class="fa-solid fa-trophy" aria-hidden="true"></i> Session Results</h1>
+      </div>
+      <div class="score-summary-body">
+        <!-- #1 Raw score, #2 Max score -->
+        <div class="score-circle" role="status" aria-live="polite">
+          <div class="score-number"><span id="resScore">0</span>/<span id="resMax">0</span></div>
+          <div class="score-label">Score</div>
+        </div>
+
+        <!-- #3 Activity name, #4 Source URL, #5 Student email, #6 Timestamp — no labels -->
+        <div class="result-info-section">
+          <div class="result-row">
+            <span class="result-icon"><i class="fa-solid fa-diagram-project" aria-hidden="true"></i></span>
+            <div class="result-value result-value--activity" id="resActivity">—</div>
+          </div>
+          <div class="result-row">
+            <span class="result-icon"><i class="fa-solid fa-globe" aria-hidden="true"></i></span>
             <div class="result-value" id="resUrl">—</div>
           </div>
-        </div>
-        <div class="result-row">
-          <span class="result-icon"><i class="fa-solid fa-envelope" aria-hidden="true"></i></span>
-          <div class="result-text">
-            <div class="result-label">Email</div>
+          <div class="result-row">
+            <span class="result-icon"><i class="fa-solid fa-envelope" aria-hidden="true"></i></span>
             <div class="result-value" id="resEmail">—</div>
           </div>
-        </div>
-        <div class="result-row">
-          <span class="result-icon"><i class="fa-solid fa-clock" aria-hidden="true"></i></span>
-          <div class="result-text">
-            <div class="result-label">Timestamp</div>
+          <div class="result-row">
+            <span class="result-icon"><i class="fa-solid fa-clock" aria-hidden="true"></i></span>
             <div class="result-value" id="resTimestampWrap">—</div>
           </div>
         </div>
       </div>
     </div>
   </div>
-  </div>
 
   <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
   <script>
     // These MUST exactly match the values in script.js, or decryption fails.
-    const QR_SHARED_PASSPHRASE = 'AA-9002341ds2sd14-dsfs12sd-54231hg';
+    const QR_SHARED_PASSPHRASE = 'change-me-shared-passphrase';
     const QR_SALT_STRING = 'java-activity-qr-salt-v1';
 
     async function deriveQrKey() {
@@ -311,10 +306,10 @@
         return JSON.parse(new TextDecoder().decode(plaintextBuffer));
     }
 
-    function renderTimestamp(ts) {
-        const timestampWrap = document.getElementById('resTimestampWrap');
-        if (!ts) return;
-        const d = new Date(ts);
+    function renderTimestamp(msSinceEpoch) {
+        const wrap = document.getElementById('resTimestampWrap');
+        if (!msSinceEpoch) return;
+        const d = new Date(msSinceEpoch);
         const dayName = d.toLocaleDateString(undefined, { weekday: 'long' });
         const dateStr = d.toLocaleDateString(undefined, { month: 'long', day: 'numeric', year: 'numeric' });
         let hours = d.getHours();
@@ -322,7 +317,7 @@
         hours = hours % 12 || 12;
         const minutes = d.getMinutes().toString().padStart(2, '0');
         const seconds = d.getSeconds().toString().padStart(2, '0');
-        timestampWrap.innerHTML =
+        wrap.innerHTML =
             `<div class="timestamp-date">${dayName}, ${dateStr}</div>` +
             `<div class="timestamp-time">${hours}:${minutes}<span class="timestamp-seconds">:${seconds}</span> ${period}</div>`;
     }
@@ -348,18 +343,16 @@
         }
 
         if (data) {
-            document.getElementById('resUrl').textContent = params.get('a') || '—';
-            document.getElementById('resEmail').textContent = data.e || '—';
             document.getElementById('resScore').textContent = data.s ?? '0';
             document.getElementById('resMax').textContent = data.m ?? '0';
-            // t is unix seconds now, not an ISO string
-            renderTimestamp(data.t ? data.t * 1000 : null);
+            document.getElementById('resActivity').textContent = params.get('n') || '—';
+            document.getElementById('resUrl').textContent = params.get('a') || '—';
+            document.getElementById('resEmail').textContent = data.e || '—';
+            renderTimestamp(data.t ? data.t * 1000 : null); // t is unix seconds
         } else {
-            document.getElementById('resUrl').textContent = 'Unable to decode results';
+            document.getElementById('resActivity').textContent = 'Unable to decode results';
         }
 
-        // Celebrate once decryption/render is done AND the page has
-        // fully loaded (fonts, icons, confetti script included).
         fireConfetti();
     }
 
