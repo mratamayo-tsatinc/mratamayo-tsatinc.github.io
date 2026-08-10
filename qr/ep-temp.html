@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Exam Permit Verification</title>
+<link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700;800&family=Roboto+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+<style>
+  :root {
+    --primary: #4f8cff;
+    --primary-dark: #2f6fe0;
+    --bg: #0f1720;
+    --surface: #16212c;
+    --surface-alt: #1c2733;
+    --text-main: #e7edf5;
+    --text-secondary: #93a3b5;
+    --border-color: #223040;
+    --success: #35c98a;
+    --danger: #ef5b5b;
+    --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.4);
+  }
+
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0; padding: 0; min-height: 100%;
+    font-family: 'Roboto', sans-serif;
+    background: var(--bg); color: var(--text-main);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .page-wrap {
+    display: flex; flex-direction: column; align-items: center;
+    width: 100%; max-width: 460px; margin: 0 auto;
+    padding: 3rem 1.25rem 3.5rem;
+  }
+
+  .verify-card {
+    width: 100%; background: var(--surface); border-radius: 16px;
+    box-shadow: var(--shadow-lg); overflow: hidden;
+    animation: scaleIn 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  @keyframes scaleIn { from { opacity: 0; transform: scale(0.96); } to { opacity: 1; transform: scale(1); } }
+
+  .verify-header {
+    padding: 1.5rem 1.75rem;
+    background: linear-gradient(135deg, var(--primary), #7c3aed);
+    text-align: center;
+  }
+  .verify-header .verify-kicker {
+    margin: 0 0 4px; font-size: 0.7rem; font-weight: 700; letter-spacing: 1.5px;
+    text-transform: uppercase; color: rgba(255,255,255,0.85);
+  }
+  .verify-header h1 {
+    margin: 0; color: #fff; font-size: 1.25rem; font-weight: 800;
+    display: flex; align-items: center; justify-content: center; gap: 0.5rem;
+  }
+
+  .status-banner {
+    display: flex; align-items: center; justify-content: center; gap: 0.5rem;
+    padding: 0.7rem 1rem; font-size: 0.82rem; font-weight: 700;
+    letter-spacing: 0.3px; text-transform: uppercase;
+  }
+  .status-banner.valid { background: rgba(53,201,138,0.14); color: var(--success); }
+  .status-banner.invalid { background: rgba(239,91,91,0.12); color: var(--danger); }
+
+  .verify-body { padding: 1.75rem; }
+
+  .period-pill {
+    display: inline-block; margin-bottom: 1.25rem;
+    padding: 5px 14px; border-radius: 999px;
+    background: rgba(79,140,255,0.14); color: var(--primary);
+    font-size: 0.78rem; font-weight: 700; letter-spacing: 0.4px; text-transform: uppercase;
+  }
+
+  .info-section { text-align: left; }
+  .info-row {
+    display: flex; align-items: flex-start; gap: 0.9rem;
+    padding: 0.85rem 0; border-bottom: 1px solid var(--border-color);
+  }
+  .info-row:last-child { border-bottom: none; }
+  .info-icon {
+    width: 34px; height: 34px; flex-shrink: 0; border-radius: 8px;
+    background: rgba(79,140,255,0.12); color: var(--primary);
+    display: flex; align-items: center; justify-content: center; font-size: 0.95rem;
+  }
+  .info-text-group { flex: 1; min-width: 0; }
+  .info-label {
+    font-size: 0.68rem; font-weight: 700; letter-spacing: 0.6px; text-transform: uppercase;
+    color: var(--text-secondary); margin-bottom: 3px;
+  }
+  .info-value {
+    font-size: 0.98rem; font-weight: 600; color: var(--text-main); word-break: break-word;
+  }
+  .info-value.mono { font-family: 'Roboto Mono', monospace; font-size: 0.92rem; }
+
+  .verify-footnote {
+    margin-top: 1.5rem; padding-top: 1rem; border-top: 1px dashed var(--border-color);
+    font-size: 0.76rem; line-height: 1.5; color: var(--text-secondary); text-align: center;
+  }
+  .verify-timestamp {
+    margin-top: 0.6rem; font-size: 0.72rem; color: var(--text-secondary); text-align: center;
+    font-family: 'Roboto Mono', monospace;
+  }
+
+  .error-card { padding: 2.25rem 1.75rem; text-align: center; }
+  .error-card i { font-size: 2rem; color: var(--danger); margin-bottom: 0.75rem; display: block; }
+  .error-card p { margin: 0; color: var(--text-secondary); font-size: 0.9rem; line-height: 1.5; }
+</style>
+</head>
+<body>
+  <div class="page-wrap">
+    <div class="verify-card">
+      <div class="verify-header">
+        <p class="verify-kicker">Digital Verification</p>
+        <h1><i class="fa-solid fa-shield-halved" aria-hidden="true"></i> Exam Permit</h1>
+      </div>
+      <div id="statusBanner"></div>
+      <div id="verifyBody" class="verify-body">
+        <div class="error-card">
+          <i class="fa-solid fa-spinner fa-spin" aria-hidden="true"></i>
+          <p>Verifying permit&hellip;</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // These MUST exactly match TEMP_PERMIT_QR_PASSPHRASE / TEMP_PERMIT_QR_SALT
+    // in exampermit.html, or decryption fails.
+    const TEMP_PERMIT_QR_PASSPHRASE = 'EP-TEMP-7f3ac91b-52ea-4bd0-9c31-88b6fd201a44';
+    const TEMP_PERMIT_QR_SALT = 'exam-permit-temp-qr-salt-v1';
+
+    async function deriveTempPermitQrKey() {
+      const enc = new TextEncoder();
+      const keyMaterial = await crypto.subtle.importKey(
+        'raw',
+        enc.encode(TEMP_PERMIT_QR_PASSPHRASE),
+        { name: 'PBKDF2' },
+        false,
+        ['deriveKey']
+      );
+      return crypto.subtle.deriveKey(
+        {
+          name: 'PBKDF2',
+          salt: enc.encode(TEMP_PERMIT_QR_SALT),
+          iterations: 100000,
+          hash: 'SHA-256'
+        },
+        keyMaterial,
+        { name: 'AES-GCM', length: 256 },
+        false,
+        ['decrypt']
+      );
+    }
+
+    function base64UrlToBytes(base64url) {
+      const base64 = base64url.replace(/-/g, '+').replace(/_/g, '/');
+      const padded = base64 + '='.repeat((4 - base64.length % 4) % 4);
+      const binary = atob(padded);
+      const bytes = new Uint8Array(binary.length);
+      for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+      return bytes;
+    }
+
+    async function decryptTempPermitPayload(token) {
+      const combined = base64UrlToBytes(token);
+      const iv = combined.slice(0, 12);
+      const ciphertext = combined.slice(12);
+      const key = await deriveTempPermitQrKey();
+      const plaintextBuffer = await crypto.subtle.decrypt({ name: 'AES-GCM', iv }, key, ciphertext);
+      return JSON.parse(new TextDecoder().decode(plaintextBuffer));
+    }
+
+    function periodLabel(period) {
+      const labels = { PRELIM: 'Prelim', MIDTERM: 'Midterm', SEMIFINALS: 'Semifinals', FINALS: 'Finals' };
+      return labels[period] || period || '\u2014';
+    }
+
+    function escapeHtml(s) {
+      return String(s == null ? '' : s)
+        .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    }
+
+    function infoRow(icon, label, value, mono) {
+      return '<div class="info-row">' +
+        '<span class="info-icon"><i class="' + icon + '" aria-hidden="true"></i></span>' +
+        '<div class="info-text-group">' +
+          '<div class="info-label">' + escapeHtml(label) + '</div>' +
+          '<div class="info-value' + (mono ? ' mono' : '') + '">' + escapeHtml(value || '\u2014') + '</div>' +
+        '</div>' +
+      '</div>';
+    }
+
+    function renderValid(data) {
+      document.getElementById('statusBanner').innerHTML =
+        '<div class="status-banner valid"><i class="fa-solid fa-circle-check" aria-hidden="true"></i> Permit Recognized</div>';
+
+      const term = [data.ay, data.sem].filter(Boolean).join(' / ');
+      const printedAt = data.t ? new Date(data.t * 1000).toLocaleString() : '\u2014';
+
+      document.getElementById('verifyBody').innerHTML =
+        '<span class="period-pill">' + escapeHtml(periodLabel(data.p)) + ' Exam Permit</span>' +
+        '<div class="info-section">' +
+          infoRow('fa-solid fa-user', 'Name', data.n) +
+          infoRow('fa-solid fa-id-card', 'Student No.', data.sn, true) +
+          infoRow('fa-solid fa-file-signature', 'Registration No.', data.rn, true) +
+          infoRow('fa-solid fa-chalkboard', 'Class', data.c) +
+          infoRow('fa-solid fa-calendar-days', 'Term', term) +
+        '</div>' +
+        '<p class="verify-footnote">This is a temporary permit. Subject and attendance details are not included here &mdash; check with the registrar or the full system for the complete record. Present this together with a valid school ID.</p>' +
+        '<p class="verify-timestamp">Printed ' + escapeHtml(printedAt) + '</p>';
+    }
+
+    function renderInvalid() {
+      document.getElementById('statusBanner').innerHTML =
+        '<div class="status-banner invalid"><i class="fa-solid fa-circle-exclamation" aria-hidden="true"></i> Could Not Verify</div>';
+      document.getElementById('verifyBody').innerHTML =
+        '<div class="error-card">' +
+          '<i class="fa-solid fa-triangle-exclamation" aria-hidden="true"></i>' +
+          '<p>This QR code could not be read. It may be damaged, incomplete, or not a valid exam permit code.</p>' +
+        '</div>';
+    }
+
+    async function init() {
+      const params = new URLSearchParams(window.location.search);
+      const token = params.get('d');
+
+      let data = null;
+      try {
+        if (token) data = await decryptTempPermitPayload(token);
+      } catch (err) {
+        console.error('Failed to decrypt temporary permit payload:', err);
+      }
+
+      if (data && data.sn) {
+        renderValid(data);
+      } else {
+        renderInvalid();
+      }
+    }
+
+    if (document.readyState === 'complete') {
+      init();
+    } else {
+      window.addEventListener('load', init);
+    }
+  </script>
+</body>
+</html>
