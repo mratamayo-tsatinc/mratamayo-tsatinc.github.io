@@ -131,6 +131,46 @@
   .error-card { padding: 2.25rem 1.75rem; text-align: center; }
   .error-card i { font-size: 2rem; color: var(--danger); margin-bottom: 0.75rem; display: block; }
   .error-card p { margin: 0; color: var(--text-secondary); font-size: 0.9rem; line-height: 1.5; }
+
+  /* ---- Subjects & attendance (fetched separately via
+     /api/exam-permit/verify, NOT part of the QR payload) — appended
+     below the decrypted info-section. Rendered progressively: the
+     info-section above paints immediately from the local decryption,
+     this section fills in a moment later once the network call
+     resolves. ---- */
+  .subjects-section { margin-top: 1.5rem; padding-top: 1.25rem; border-top: 1px solid var(--border-color); }
+  .subjects-heading {
+    font-size: 0.7rem; font-weight: 700; letter-spacing: 0.6px; text-transform: uppercase;
+    color: var(--text-secondary); margin: 0 0 0.75rem;
+  }
+  .subject-card {
+    background: var(--surface-alt); border: 1px solid var(--border-color); border-radius: 10px;
+    padding: 0.7rem 0.85rem; margin-bottom: 0.55rem;
+  }
+  .subject-card:last-child { margin-bottom: 0; }
+  .subject-card-top { display: flex; align-items: baseline; gap: 0.5rem; flex-wrap: wrap; }
+  .subject-code-pill {
+    font-family: 'Roboto Mono', monospace; font-size: 0.7rem; font-weight: 700;
+    color: var(--primary); background: rgba(79,140,255,0.14); border-radius: 5px; padding: 1px 7px;
+    flex-shrink: 0;
+  }
+  .subject-title { font-size: 0.86rem; font-weight: 600; color: var(--text-main); }
+  .subject-meta { font-size: 0.72rem; color: var(--text-secondary); margin-top: 3px; }
+  .subject-attendance {
+    margin-top: 0.5rem; padding-top: 0.5rem; border-top: 1px solid var(--border-color);
+    display: flex; align-items: center; gap: 6px; font-size: 0.78rem; font-weight: 600;
+  }
+  .subject-attendance.synced { color: var(--text-main); }
+  .subject-attendance.not-synced { color: var(--text-secondary); font-style: italic; font-weight: 400; }
+  .subjects-skel {
+    height: 62px; border-radius: 10px; margin-bottom: 0.55rem;
+    background: linear-gradient(90deg, var(--surface-alt) 25%, rgba(255,255,255,0.06) 37%, var(--surface-alt) 63%);
+    background-size: 400% 100%; animation: subj-shimmer 1.4s ease infinite;
+  }
+  @keyframes subj-shimmer { 0% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } }
+  .subjects-unavailable {
+    font-size: 0.78rem; color: var(--text-secondary); text-align: center; padding: 0.5rem 0;
+  }
 </style>
 </head>
 <body>
@@ -159,6 +199,13 @@
     // in exampermit.html, or decryption fails.
     const TEMP_PERMIT_QR_PASSPHRASE = 'EP-TEMP-7f3ac91b-52ea-4bd0-9c31-88b6fd201a44';
     const TEMP_PERMIT_QR_SALT = 'exam-permit-temp-qr-salt-v1';
+
+    // Base URL of the SASRS API (same backend exampermit.html talks to).
+    // This page is a static, standalone deployment (see TEMP_PERMIT_VIEW_URL
+    // in exampermit.html) with no server-side templating, so — unlike
+    // exampermit.html's apiBaseUrl — this has to be hardcoded here and kept
+    // in sync manually with wherever the API actually lives.
+    const EXAM_PERMIT_VERIFY_API_BASE = 'https://test-api.tsathub.cloud/sms/api';
 
     async function deriveTempPermitQrKey() {
       const enc = new TextEncoder();
@@ -237,8 +284,79 @@
           infoRow('fa-solid fa-chalkboard', 'Class', data.c) +
           infoRow('fa-solid fa-calendar-days', 'Term', term) +
         '</div>' +
-        '<p class="verify-footnote">This is a temporary permit. Subject and attendance details are not included here &mdash; check with the registrar or the full system for the complete record. Present this together with a valid school ID.</p>' +
+        '<div class="subjects-section" id="subjectsSection"></div>' +
+        '<p class="verify-footnote">Present this together with a valid school ID.</p>' +
         '<p class="verify-timestamp">Printed ' + escapeHtml(printedAt) + '</p>';
+    }
+
+    // ---- Subjects & attendance — fetched separately, NOT decoded from
+    // the QR payload itself (see EXAM_PERMIT_VERIFY_API_BASE above and
+    // ExamPermitController::verifyTemporaryPermit() server-side). The
+    // SAME encrypted token is sent as-is; the server decrypts it and
+    // looks up the subject list, so nothing new is ever encoded into
+    // the printed QR code. ----
+
+    function renderSubjectsLoading() {
+      const el = document.getElementById('subjectsSection');
+      if (!el) return;
+      el.innerHTML =
+        '<p class="subjects-heading">Subjects &amp; Attendance</p>' +
+        '<div class="subjects-skel"></div><div class="subjects-skel"></div>';
+    }
+
+    function renderSubjectsUnavailable() {
+      const el = document.getElementById('subjectsSection');
+      if (!el) return;
+      el.innerHTML =
+        '<p class="subjects-heading">Subjects &amp; Attendance</p>' +
+        '<p class="subjects-unavailable">Subject and attendance details aren\u2019t available right now &mdash; check with the registrar or the full system for the complete record.</p>';
+    }
+
+    function renderSubjects(subjects) {
+      const el = document.getElementById('subjectsSection');
+      if (!el) return;
+
+      if (!subjects || !subjects.length) {
+        el.innerHTML =
+          '<p class="subjects-heading">Subjects &amp; Attendance</p>' +
+          '<p class="subjects-unavailable">No enrolled subjects found for this term.</p>';
+        return;
+      }
+
+      const cards = subjects.map(function (sub) {
+        const att = sub.attendance || {};
+        const hasRate = att.ratePercent !== null && att.ratePercent !== undefined;
+        const attText = hasRate
+          ? ((att.present + att.late) + '/' + att.totalMeetings + ' (' + att.ratePercent + '%)')
+          : 'Not yet synced';
+        const attIcon = hasRate ? 'fa-solid fa-circle-check' : 'fa-regular fa-clock';
+
+        return '<div class="subject-card">' +
+          '<div class="subject-card-top">' +
+            '<span class="subject-code-pill">' + escapeHtml(sub.subjectCode) + '</span>' +
+            '<span class="subject-title">' + escapeHtml(sub.subjectTitle) + '</span>' +
+          '</div>' +
+          '<div class="subject-meta">' + escapeHtml(sub.teacherName) + ' &middot; ' + escapeHtml(sub.classCode) + '</div>' +
+          '<div class="subject-attendance ' + (hasRate ? 'synced' : 'not-synced') + '">' +
+            '<i class="' + attIcon + '" aria-hidden="true"></i> ' + escapeHtml(attText) +
+          '</div>' +
+        '</div>';
+      }).join('');
+
+      el.innerHTML = '<p class="subjects-heading">Subjects &amp; Attendance</p>' + cards;
+    }
+
+    async function fetchFullPermitDetails(token) {
+      try {
+        const url = EXAM_PERMIT_VERIFY_API_BASE + '/exam-permit/verify?token=' + encodeURIComponent(token);
+        const res = await fetch(url);
+        const body = await res.json().catch(function () { return null; });
+        if (!body || body.ok !== true) return null;
+        return body;
+      } catch (err) {
+        console.error('Failed to fetch subjects/attendance:', err);
+        return null;
+      }
     }
 
     function renderInvalid() {
@@ -264,6 +382,16 @@
 
       if (data && data.sn) {
         renderValid(data);
+        renderSubjectsLoading();
+        // Same token, sent as-is — the server re-derives the same key/IV
+        // handling to decrypt it and look up the subject list. No new
+        // fields are ever added to the QR payload for this.
+        const full = await fetchFullPermitDetails(token);
+        if (full) {
+          renderSubjects(full.subjects);
+        } else {
+          renderSubjectsUnavailable();
+        }
       } else {
         renderInvalid();
       }
