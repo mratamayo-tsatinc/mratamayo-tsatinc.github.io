@@ -35,10 +35,35 @@
     padding: 3rem 1.25rem 3.5rem;
   }
 
+  /* Parallax layer: this element's transform is updated on scroll (see
+     script below) so it drifts upward slower than the page scrolls,
+     giving it a sense of depth relative to the card beneath it — same
+     effect as it3-w4.html's results page. */
+  .parallax-logo-layer {
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    margin-bottom: 1.25rem;
+    will-change: transform;
+  }
+
+  .school-logo {
+    display: block;
+    width: 130px;
+    height: 130px;
+    margin: 0;
+    padding: 0;
+    border-radius: 50%;
+    background: #ffffff;
+    object-fit: contain;
+    box-shadow: var(--shadow-lg);
+  }
+
   .verify-card {
     width: 100%; background: var(--surface); border-radius: 16px;
     box-shadow: var(--shadow-lg); overflow: hidden;
     animation: scaleIn 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative; z-index: 1;
   }
   @keyframes scaleIn { from { opacity: 0; transform: scale(0.96); } to { opacity: 1; transform: scale(1); } }
 
@@ -110,6 +135,10 @@
 </head>
 <body>
   <div class="page-wrap">
+    <div class="parallax-logo-layer" id="parallaxLogoLayer">
+      <img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRvc9o3Q_YlbNhYjvTouDZAAy0TzLAHHYabzuq6VtXNf7VXiUHYUEFkemOj&s=10" alt="School logo" class="school-logo">
+    </div>
+
     <div class="verify-card">
       <div class="verify-header">
         <p class="verify-kicker">Digital Verification</p>
@@ -245,6 +274,32 @@
     } else {
       window.addEventListener('load', init);
     }
+
+    // --- PARALLAX LOGO SCROLL EFFECT ---
+    // The logo drifts at a fraction of the page's scroll speed (0.4x),
+    // so as the card scrolls up past it, the logo lags behind — the
+    // classic parallax "layers moving at different depths" look. Same
+    // effect as it3-w4.html's results page. rAF-throttled so it doesn't
+    // run more than once per paint.
+    (function setupParallax() {
+        const layer = document.getElementById('parallaxLogoLayer');
+        if (!layer) return;
+
+        let ticking = false;
+
+        function updateParallax() {
+            const offset = window.scrollY * 0.4;
+            layer.style.transform = `translateY(${offset}px)`;
+            ticking = false;
+        }
+
+        window.addEventListener('scroll', () => {
+            if (!ticking) {
+                requestAnimationFrame(updateParallax);
+                ticking = true;
+            }
+        }, { passive: true });
+    })();
   </script>
 </body>
 </html>
