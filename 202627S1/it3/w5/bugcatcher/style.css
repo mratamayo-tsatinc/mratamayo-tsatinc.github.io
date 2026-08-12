@@ -1,0 +1,408 @@
+/* --- 1. VARIABLES & RESET --- */
+:root {
+    --primary: #6200ee;      /* Google Material Deep Purple */
+    --primary-dark: #3700b3;
+    --secondary: #03dac6;    /* Teal for success/inputs */
+    --error: #b00020;        /* Material Red for errors */
+    --bg: #f5f5f5;           /* Light gray background */
+    --surface: #ffffff;      /* White cards */
+    --editor-bg: #263238;    /* Material Dark Blue/Grey */
+    --text-main: #333333;
+}
+
+body, html {
+    margin: 0;
+    padding: 0;
+    height: 100%;
+    font-family: 'Roboto', sans-serif;
+    background-color: var(--bg);
+    color: var(--text-main);
+}
+
+/* --- 2. LOGIN OVERLAY (Full Screen) --- */
+.login-overlay {
+    position: fixed;
+    inset: 0;
+    background: var(--bg);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+}
+
+.login-card {
+    width: 100%;
+    max-width: 380px;
+    padding: 2.5rem;
+    background: var(--surface);
+    border-radius: 8px;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+    text-align: center;
+    position: relative;
+}
+
+.login-card h2 {
+    margin-top: 0;
+    color: var(--primary);
+    font-weight: 500;
+}
+
+.input-group {
+    display: flex;
+    flex-direction: column;
+    gap: 1.2rem;
+    margin: 2rem 0;
+}
+
+/* Specific styling for login fields */
+.login-card input {
+    padding: 14px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 1rem;
+    width: 100%;
+    box-sizing: border-box; /* Ensures padding doesn't increase width */
+    transition: border-color 0.3s;
+}
+
+.login-card input:focus {
+    outline: none;
+    border-color: var(--primary);
+}
+
+/* --- 3. MAIN APP LAYOUT --- */
+.main-layout {
+    display: flex;
+    height: 100vh;
+}
+
+/* Sidebar */
+.sidebar {
+    width: 260px;
+    background: var(--surface);
+    border-right: 1px solid #e0e0e0;
+    display: flex;
+    flex-direction: column;
+    padding: 1.5rem;
+}
+
+.user-info {
+    padding-bottom: 1rem;
+    border-bottom: 1px solid #eee;
+    margin-bottom: 1rem;
+}
+
+.sidebar h3 {
+    font-size: 0.75rem;
+    color: #888;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    margin: 1.5rem 0 0.5rem 0;
+}
+
+.sidebar ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.sidebar li {
+    padding: 12px 16px;
+    margin: 4px 0;
+    cursor: pointer;
+    border-radius: 4px;
+    font-size: 0.9rem;
+    font-weight: 500;
+    transition: all 0.2s;
+}
+
+.sidebar li:hover { background: #f0f0f0; }
+.sidebar li.active {
+    background: var(--primary);
+    color: white;
+}
+
+/* Main Content Area */
+.content {
+    flex: 1;
+    padding: 2rem;
+    overflow-y: auto;
+}
+
+/* --- 4. THE CODE EDITOR (Interactive Part) --- */
+.code-editor {
+    background: var(--editor-bg);
+    color: #eceff1;
+    padding: 2rem;
+    border-radius: 8px;
+    font-family: 'Roboto Mono', monospace;
+    font-size: 1.1rem;
+    line-height: 1.7;
+    margin: 1.5rem 0;
+    box-shadow: inset 0 2px 10px rgba(0,0,0,0.3);
+    overflow-x: auto;
+}
+
+/* RESET: Only applies to inputs inside the editor */
+.code-editor .code-input {
+    background: rgba(255, 255, 255, 0.08);
+    border: none;
+    border-bottom: 2px solid var(--secondary);
+    color: #ffca28; /* Gold color for input text */
+    
+    font-family: 'Roboto Mono', monospace; /* Keep it monospaced */
+    font-size: 1em; /* Exactly same size as surrounding code */
+    
+    padding: 0 2px;
+    margin: 0 1px;
+    height: auto;
+    vertical-align: baseline; /* Prevents line jumping */
+    outline: none;
+    transition: background 0.3s, border-color 0.3s;
+}
+
+.code-editor .code-input:focus {
+    background: rgba(255, 255, 255, 0.2);
+    border-bottom-color: #ffffff;
+}
+
+/* Token selection styles (for 'select the wrong token' activity) */
+.token-group { display: inline-block; margin: 0 4px; }
+/* Each token is a checkbox label — visually look like normal inline code by default */
+.token-option {
+    display: inline;               /* behave like normal code tokens */
+    padding: 0 0.15rem;            /* minimal padding so spacing is preserved */
+    margin: 0;                     /* no extra margin by default */
+    border-radius: 3px;
+    cursor: pointer;
+    background: transparent;       /* no box or background initially */
+    color: inherit;                /* match surrounding code color */
+    transition: background 0.12s, color 0.12s, text-decoration 0.12s;
+    user-select: none;
+    font-family: inherit;
+}
+.token-option input[type="checkbox"] {
+    position: absolute;
+    opacity: 0;
+    width: 0;
+    height: 0;
+    margin: 0;
+    pointer-events: none;
+}
+/* On hover, give a small background and underline to indicate clickability */
+.token-option:hover:not(.disabled) {
+    background: rgba(255,255,255,0.06);
+    text-decoration: underline;
+}
+/* Subtle visual for items that have been selected before verification */
+.token-option.selected {
+    color: var(--secondary);
+    text-decoration: underline;
+    font-weight: 600;
+}
+/* Clear visible feedback after verification: selected & correct are made obvious */
+.token-option.correct {
+    background: var(--secondary);
+    color: #004d40;
+    padding: 0 0.35rem;
+    border-radius: 4px;
+    font-weight: 700;
+}
+.token-option.wrong {
+    background: var(--error);
+    color: white;
+    padding: 0 0.35rem;
+    border-radius: 4px;
+    font-weight: 700;
+}
+.token-option.disabled { opacity: 0.55; cursor: not-allowed; }
+.selected-info { margin-left: 1rem; font-weight: 500; }
+
+/* --- 5. BUTTONS & FEEDBACK --- */
+.primary-btn {
+    background-color: var(--primary);
+    color: white;
+    border: none;
+    padding: 12px 24px;
+    border-radius: 4px;
+    font-size: 0.9rem;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    cursor: pointer;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+    transition: background 0.3s, box-shadow 0.3s;
+}
+
+.primary-btn:hover {
+    background-color: var(--primary-dark);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+}
+
+#feedback {
+    margin-top: 1rem;
+    font-weight: 500;
+    min-height: 1.2rem;
+}
+
+/* Loading Spinner */
+.loader-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 200px;
+}
+
+.spinner {
+    width: 48px;
+    height: 48px;
+    border: 5px solid rgba(98, 0, 238, 0.1);
+    border-top: 5px solid var(--primary);
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin-bottom: 1rem;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+.error-text {
+    color: var(--error);
+    font-size: 0.85rem;
+    margin-top: 8px;
+}
+
+.secondary-btn {
+    background: transparent;
+    border: 1px solid var(--primary);
+    color: var(--primary);
+    padding: 10px;
+    border-radius: 4px;
+    cursor: pointer;
+    text-transform: uppercase;
+    font-weight: 500;
+    transition: 0.3s;
+}
+
+.secondary-btn:hover {
+    background: rgba(98, 0, 238, 0.05);
+}
+
+.sidebar {
+    /* Ensure the sidebar can push the button to the bottom */
+    display: flex;
+    flex-direction: column;
+}
+
+.sidebar li {
+    display: flex;
+    justify-content: space-between; /* Pushes score to the right */
+    align-items: center;
+    padding: 12px 16px;
+    margin: 4px 0;
+    cursor: pointer;
+    border-radius: 4px;
+    font-size: 0.9rem;
+    font-weight: 500;
+}
+
+.nav-score {
+    font-size: 0.75rem;
+    font-family: 'Roboto Mono', monospace;
+    background: #e0e0e0;
+    padding: 2px 6px;
+    border-radius: 10px;
+    color: #666;
+}
+
+.sidebar li.active .nav-score {
+    background: rgba(255, 255, 255, 0.2);
+    color: white;
+}
+
+/* Green indicator for 100% completion */
+.completed-score {
+    background: var(--secondary) !important;
+    color: #004d40 !important;
+}
+
+/* Total score summary in sidebar */
+.score-summary {
+    background: rgba(98,0,238,0.03);
+    border-radius: 6px;
+    padding: 0.6rem;
+    margin-top: 0.6rem;
+}
+.score-summary.completed {
+    background: var(--secondary);
+    color: #004d40;
+    font-weight: 700;
+}
+
+/* Gear button on login */
+.gear-btn {
+    position: absolute;
+    right: 12px;
+    top: 12px;
+    background: transparent;
+    border: none;
+    font-size: 1.2rem;
+    cursor: pointer;
+    padding: 6px;
+    border-radius: 6px;
+}
+
+/* Timer in header */
+.card-header { display: flex; justify-content: space-between; align-items: flex-start; gap: 1rem; }
+.header-left { flex: 1; }
+.header-right { display: flex; align-items: center; gap: 0.5rem; flex-shrink: 0; }
+.timer {
+    background: var(--primary);
+    color: white;
+    padding: 8px 12px;
+    border-radius: 6px;
+    font-weight: 700;
+    font-family: 'Roboto Mono', monospace;
+    font-size: 0.9rem;
+}
+.timer.warning { background: var(--error); color: white; box-shadow: 0 2px 8px rgba(176,0,32,0.18); }
+
+/* visually indicate disabled primary buttons */
+.primary-btn[disabled], .primary-btn.disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+    box-shadow: none;
+}
+
+/* Modal common */
+.modal {
+    position: fixed;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0,0,0,0.35);
+    z-index: 2000;
+}
+.modal-card {
+    width: 100%;
+    max-width: 520px;
+    background: var(--surface);
+    padding: 1.25rem 1.5rem;
+    border-radius: 8px;
+    box-shadow: 0 8px 28px rgba(0,0,0,0.18);
+}
+.modal-card h3 { margin-top: 0; }
+.modal-body { margin: 0.75rem 0 1rem 0; }
+.modal-actions { display:flex; gap:0.5rem; justify-content:flex-end; }
+.modal .hint { font-size: 0.85rem; color:#666; margin:4px 0 0 0; }
+.invalid { border: 1px solid var(--error) !important; }
+
+/* Score modal specifics */
+.score-card { max-width: 420px; text-align: center; position: relative; }
+.score-card .close-x { position: absolute; right: 10px; top: 8px; background: transparent; border: none; cursor: pointer; }
+.student-email { color: #666; font-size: 0.95rem; margin-bottom: 6px; }
+.student-score { font-size: 2.5rem; font-weight: 800; margin: 8px 0; color: var(--primary); }
+.score-breakdown { text-align: left; margin-top: 8px; font-family: 'Roboto Mono', monospace; }
